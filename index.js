@@ -4,7 +4,7 @@ import axios from 'axios';
 const FINALIZE_URL = "https://apukone.com/api/finalizeMessage";
 
 export const createApukoneClient = ({ agentId, onMessage }) => {
-  const SSE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
+  const MESSAGE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
   let buffer = "";
 
   const connectSSE = () => {
@@ -12,22 +12,22 @@ export const createApukoneClient = ({ agentId, onMessage }) => {
     console.log("Waiting for messages.");
 
     const client = http2.connect('https://apukone.com');
-    const req = client.request({ ':method': 'GET', ':path': SSE_ENDPOINT, 'accept': 'text/event-stream' })
+    const req = client.request({ ':method': 'GET', ':path': MESSAGE_ENDPOINT, 'accept': 'text/event-stream' })
       .setEncoding('utf8');
 
     req.on('data', chunk => buffer += chunk);
 
     req.on('end', async () => {
       console.log("Received a message.")
-      const [id, chat_id, agent_id, rawData] = buffer.split('\n')
-        .map(line => line.split(': ')[1]);
-
+      const lines = buffer.split('\n').map(line => line.trim());
+      const chat_id = lines.find(line => line.startsWith('chat_id:'))?.split(': ')[1];
+      const agent_id = lines.find(line => line.startsWith('agent_id:'))?.split(': ')[1];
+      const rawData = lines.find(line => line.startsWith('data:'))?.replace('data: ', '');
       if (onMessage) {
         const processedMessage = await onMessage(rawData);
         await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
         console.log(`Response sent.`);
       }
-
       buffer = "";
       scheduleReconnect();
     });
