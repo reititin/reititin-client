@@ -24,7 +24,7 @@ export const ReititinClient = ({ agentId, onMessage }) => {
       const agent_id = lines.find(line => line.startsWith('agent_id:'))?.split(': ')[1];
       const rawData = lines.find(line => line.startsWith('data:'))?.replace('data: ', '');
       if (onMessage) {
-        const processedMessage = await onMessage(rawData);
+        const processedMessage = await onMessage(JSON.parse(rawData));
         await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
         console.log(`Response sent.`);
       }
