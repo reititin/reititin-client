@@ -1,9 +1,9 @@
 import http2 from 'http2';
 import axios from 'axios';
 
-const FINALIZE_URL = "https://apukone.com/api/finalizeMessage";
+const FINALIZE_URL = "https://reititin.com/api/finalizeMessage";
 
-export const createApukoneClient = ({ agentId, onMessage }) => {
+export const ReititinClient = ({ agentId, onMessage }) => {
   const MESSAGE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
   let buffer = "";
 
@@ -11,7 +11,7 @@ export const createApukoneClient = ({ agentId, onMessage }) => {
     if (buffer) return;
     console.log("Waiting for messages.");
 
-    const client = http2.connect('https://apukone.com');
+    const client = http2.connect('https://reititin.com');
     const req = client.request({ ':method': 'GET', ':path': MESSAGE_ENDPOINT, 'accept': 'text/event-stream' })
       .setEncoding('utf8');
 
