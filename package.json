@@ -1,0 +1,25 @@
+{
+  "name": "@reititin/client",
+  "version": "0.0.1",
+  "description": "Reititin client allows you to connect your LLM system to Reititin platform.",
+  "keywords": [
+    "AI",
+    "LLM",
+    "message",
+    "broker"
+  ],
+  "license": "ISC",
+  "author": "Reititin",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reititin/reititin-client.git"
+  },
+  "dependencies": {
+    "axios": "1.8.2"
+  }
+}
