@@ -33,7 +33,13 @@ export const ReititinClient = ({ agentId, onMessage }) => {
     });
 
     req.on('error', err => {
-      console.error('Connection error:', err);
+      console.error('Connection closed. Reconnecting.');
+      client.close();
+      scheduleReconnect();
+    });
+
+    req.on('timeout', err => {
+      console.error('Connection timedout. Reconnecting.');
       client.close();
       scheduleReconnect();
     });
