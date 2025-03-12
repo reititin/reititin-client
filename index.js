@@ -1,45 +1,58 @@
 import http2 from 'http2';
 import axios from 'axios';
 
-const FINALIZE_URL = "https://reititin.com/api/finalizeMessage";
-
 export const ReititinClient = ({ agentId, onMessage }) => {
   const MESSAGE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
+  const FINALIZE_URL = "https://reititin.com/api/finalizeMessage";
+  let stayIdle = null;
   let buffer = "";
 
   const connectSSE = () => {
     if (buffer) return;
+    
     console.log("Waiting for messages.");
 
     const client = http2.connect('https://reititin.com');
     const req = client.request({ ':method': 'GET', ':path': MESSAGE_ENDPOINT, 'accept': 'text/event-stream' })
       .setEncoding('utf8');
 
+    stayIdle = setTimeout(() => {
+      req.close();
+      client.close();
+    }, 55 * 60 * 1000);
+
     req.on('data', chunk => buffer += chunk);
 
     req.on('end', async () => {
-      console.log("Received a message.")
-      const lines = buffer.split('\n').map(line => line.trim());
-      const chat_id = lines.find(line => line.startsWith('chat_id:'))?.split(': ')[1];
-      const agent_id = lines.find(line => line.startsWith('agent_id:'))?.split(': ')[1];
-      const rawData = lines.find(line => line.startsWith('data:'))?.replace('data: ', '');
-      if (onMessage) {
-        const processedMessage = await onMessage(JSON.parse(rawData));
-        await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
-        console.log(`Response sent.`);
+      try {
+        const lines = buffer.split('\n').map(line => line.trim());
+        const chat_id = lines.find(line => line.startsWith('chat_id:'))?.split(': ')[1];
+        const agent_id = lines.find(line => line.startsWith('agent_id:'))?.split(': ')[1];
+        const rawData = lines.find(line => line.startsWith('data:'))?.replace('data: ', '');
+        if (onMessage) {
+          console.log("Message received. Processing.");
+          const processedMessage = await onMessage(JSON.parse(rawData));
+          await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
+          console.log(`Response sent.`);
+        }
+        buffer = "";
+      } catch(err) {
+        console.log("Reconnecting.");
       }
-      buffer = "";
+      stayIdle = null;
       scheduleReconnect();
     });
 
     req.on('error', err => {
       console.error('Connection closed. Reconnecting.');
+      req.close();
       client.close();
       scheduleReconnect();
     });
 
     req.on('timeout', err => {
       console.error('Connection timedout. Reconnecting.');
+      req.close();
       client.close();
       scheduleReconnect();
     });
