@@ -3,8 +3,7 @@ import axios from 'axios';
 
 export const ReititinClient = ({ agentId, onMessage }) => {
   const MESSAGE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
-  const FINALIZE_URL = "https://reititin.com/api/finalizeMessage";
-  let stayIdle = null;
+  const FINALIZE_URL = "https://test.reititin.com/api/finalizeMessage";
   let buffer = "";
 
   const connectSSE = () => {
@@ -12,14 +11,9 @@ export const ReititinClient = ({ agentId, onMessage }) => {
     
     console.log("Waiting for messages.");
 
-    const client = http2.connect('https://reititin.com');
+    const client = http2.connect('https://test.reititin.com');
     const req = client.request({ ':method': 'GET', ':path': MESSAGE_ENDPOINT, 'accept': 'text/event-stream' })
       .setEncoding('utf8');
-
-    stayIdle = setTimeout(() => {
-      req.close();
-      client.close();
-    }, 55 * 60 * 1000);
 
     req.on('data', chunk => buffer += chunk);
 
@@ -29,7 +23,7 @@ export const ReititinClient = ({ agentId, onMessage }) => {
         const chat_id = lines.find(line => line.startsWith('chat_id:'))?.split(': ')[1];
         const agent_id = lines.find(line => line.startsWith('agent_id:'))?.split(': ')[1];
         const rawData = lines.find(line => line.startsWith('data:'))?.replace('data: ', '');
-        if (onMessage) {
+        if (onMessage && rawData && agent_id && chat_id) {
           console.log("Message received. Processing.");
           const processedMessage = await onMessage(JSON.parse(rawData));
           await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
@@ -39,7 +33,6 @@ export const ReititinClient = ({ agentId, onMessage }) => {
       } catch(err) {
         console.log("Reconnecting.");
       }
-      stayIdle = null;
       scheduleReconnect();
     });
 
