@@ -1,8 +1,8 @@
 import http2 from 'http2';
 import axios from 'axios';
 
-export const ReititinClient = ({ agentId, onMessage }) => {
-  const MESSAGE_ENDPOINT = `/api/agents/messages?agentId=${agentId}`;
+export const ReititinClient = ({ token, onMessage }) => {
+  const MESSAGE_ENDPOINT = `/api/agents/messages`;
   const FINALIZE_URL = "https://test.reititin.com/api/finalizeMessage";
   let buffer = "";
 
@@ -12,8 +12,12 @@ export const ReititinClient = ({ agentId, onMessage }) => {
     console.log("Waiting for messages.");
 
     const client = http2.connect('https://test.reititin.com');
-    const req = client.request({ ':method': 'GET', ':path': MESSAGE_ENDPOINT, 'accept': 'text/event-stream' })
-      .setEncoding('utf8');
+    const req = client.request({ 
+      ':method': 'GET', 
+      ':path': MESSAGE_ENDPOINT, 
+      'accept': 'text/event-stream',
+      'authorization': `Bearer ${token}`
+    }).setEncoding('utf8');
 
     req.on('data', chunk => buffer += chunk);
 
@@ -26,7 +30,15 @@ export const ReititinClient = ({ agentId, onMessage }) => {
         if (onMessage && rawData && agent_id && chat_id) {
           console.log("Message received. Processing.");
           const processedMessage = await onMessage(JSON.parse(rawData));
-          await axios.post(FINALIZE_URL, { chat_id: chat_id, agent_id: agent_id, message: processedMessage });
+          await axios.post(
+            FINALIZE_URL, 
+            { chat_id, agent_id, message: processedMessage }, 
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
           console.log(`Response sent.`);
         }
         buffer = "";
