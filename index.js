@@ -1,9 +1,9 @@
 import http2 from 'http2';
 import axios from 'axios';
 
-export const ReititinClient = ({ token, onMessage }) => {
+export const ReititinClient = ({host, token, onMessage }) => {
   const MESSAGE_ENDPOINT = `/api/agents/messages`;
-  const FINALIZE_URL = "https://test.reititin.com/api/finalizeMessage";
+  const FINALIZE_URL = `https://${host}/api/finalizeMessage`;
   let buffer = "";
 
   const connectSSE = () => {
@@ -11,7 +11,7 @@ export const ReititinClient = ({ token, onMessage }) => {
     
     console.log("Waiting for messages.");
 
-    const client = http2.connect('https://test.reititin.com');
+    const client = http2.connect(`https://${host}`);
     const req = client.request({ 
       ':method': 'GET', 
       ':path': MESSAGE_ENDPOINT, 
