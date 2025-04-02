@@ -1,6 +1,6 @@
 {
   "name": "@reititin/client",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Reititin client allows you to connect your LLM system to Reititin platform.",
   "keywords": [
     "AI",
